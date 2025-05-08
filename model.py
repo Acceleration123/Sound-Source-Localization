@@ -60,7 +60,7 @@ class UNet(nn.Module):
             nn.BatchNorm2d(768),
             nn.ELU(),
             nn.Dropout(self.dropout),
-            nn.ConvTranspose2d(768, 768, kernel_size=(2, 2), stride=(2, 2)),
+            nn.ConvTranspose2d(768, 768, kernel_size=(2, 2), stride=(2, 2))
         )
 
         # Decoder
@@ -97,7 +97,7 @@ class UNet(nn.Module):
             nn.BatchNorm2d(128),
             nn.ELU(),
             nn.Dropout(self.dropout),
-            nn.ConvTranspose2d(128, 128, kernel_size=(2, 2), stride=(2, 2)),
+            nn.ConvTranspose2d(128, 128, kernel_size=(2, 2), stride=(2, 2))
         )
 
         # Output Block

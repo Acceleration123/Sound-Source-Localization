@@ -144,8 +144,3 @@ if __name__ == '__main__':
     for i, (noisy, irm_direct, irm_speech) in enumerate(tqdm(train_loader)):
         print(noisy.shape, irm_direct.shape, irm_speech.shape)
 
-
-
-
-
-

@@ -114,6 +114,38 @@ class Train_Dataset(data.Dataset):
         return noisy, irm_direct, irm_speech
 
 
+class Valid_Dataset(data.Dataset):
+    def __init__(self):
+        super(Valid_Dataset, self).__init__()
+        self.direct_path = os.path.join(VALID_DATASET_PATH, 'direct')
+        self.reverb_path = os.path.join(VALID_DATASET_PATH, 'reverb')
+        self.noisy_path = os.path.join(VALID_DATASET_PATH, 'noisy')
+
+        self.direct_list = sorted(librosa.util.find_files(self.direct_path, ext='wav'))
+        self.reverb_list = sorted(librosa.util.find_files(self.reverb_path, ext='wav'))
+        self.noisy_list = sorted(librosa.util.find_files(self.noisy_path, ext='wav'))
+
+    def __len__(self):
+        return len(self.direct_list)
+
+    def __getitem__(self, idx):
+        direct, _ = sf.read(self.direct_list[idx], dtype='float32')
+        reverb, _ = sf.read(self.reverb_list[idx], dtype='float32')
+        noisy, _ = sf.read(self.noisy_list[idx], dtype='float32')
+
+        direct = torch.tensor(direct)  # (T,)
+        reverb = torch.tensor(reverb)  # (T,)
+        noisy = torch.tensor(noisy)    # (T,)
+
+        direct_stft = stft_encoder(direct)[0:256, 0:256]  # (F, T)
+        reverb_stft = stft_encoder(reverb)[0:256, 0:256]  # (F, T)
+        noisy_stft = stft_encoder(noisy)[0:256, 0:256]    # (F, T)
+
+        irm_direct, irm_speech = get_irm(direct_stft, reverb_stft, noisy_stft)  # (F, T)
+
+        return noisy, irm_direct, irm_speech
+
+
 if __name__ == '__main__':
     # test get_irm function
     clean, fs = sf.read('00001.wav', dtype='float32')
@@ -143,4 +175,16 @@ if __name__ == '__main__':
     train_loader = data.DataLoader(train_dataset, batch_size=1, shuffle=True, num_workers=0)
     for i, (noisy, irm_direct, irm_speech) in enumerate(tqdm(train_loader)):
         print(noisy.shape, irm_direct.shape, irm_speech.shape)
+        
+    # test Valid_Dataset
+    valid_dataset = Valid_Dataset()
+    valid_loader = data.DataLoader(valid_dataset, batch_size=1, shuffle=False, num_workers=0)
+    for i, (noisy, irm_direct, irm_speech) in enumerate(tqdm(valid_loader)):
+        print(noisy.shape, irm_direct.shape, irm_speech.shape)
+
+
+
+
+
+
 

@@ -7,11 +7,13 @@ import librosa
 import random
 import pandas as pd
 from tqdm import tqdm
+import os
 
 TRAIN_DATABASE_CLEAN = 'D:\\Users\\14979\\Desktop\\DNS5_16k\\train_clean'
 TRAIN_NOISE_DATABASE = 'D:\\Users\\Database\\train_noise_data_new.csv'
-RIR_DIRECT_DATABASE = 'rir/train/direct'
-RIR_REVERB_DATABASE = 'rir/train/reverb'
+RIR_DIRECT_DATABASE = 'C:\\Users\\14979\\Desktop\\NN-Zoo\\U-Net-for-SSL\\rir\\train\\direct'
+RIR_REVERB_DATABASE = 'C:\\Users\\14979\\Desktop\\NN-Zoo\\U-Net-for-SSL\\rir\\train\\direct'
+VALID_DATASET_PATH = 'D:\\Users\\SSL\\valid'
 
 
 def get_irm(direct, reverb, noisy):

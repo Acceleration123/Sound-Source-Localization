@@ -11,7 +11,6 @@ from einops import rearrange
 class SRP(nn.Module):
     """
     Steering Response Power (SRP) For DOA Estimation Exploiting Uniform Linear Array (ULA)
-
     Delay and Sum (DS) Beam
     """
     def __init__(

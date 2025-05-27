@@ -129,6 +129,6 @@ if __name__ == '__main__':
     plt.title('SRP Power Map')
     plt.grid(alpha=0.3)
     plt.legend()
-    plt.xlim(-90, 90)  # 显式设置x轴范围
+    plt.xlim(-90, 90)  
     plt.show()
 

@@ -21,7 +21,10 @@ class SRP(nn.Module):
             n_fft=512,
             hop_length=256,
             window_length=512,
-            fs=16000
+            fs=16000,
+            f_low=400,
+            f_high=1000,
+            resolution=0.5
     ):
         super(SRP, self).__init__()
         self.d_inter = d_inter
@@ -30,12 +33,19 @@ class SRP(nn.Module):
         self.hop_length = hop_length
         self.window = torch.hann_window(window_length).pow(0.5)
         self.fs = fs
+        self.resolution = resolution
+        self.f_low = f_low
+        self.f_high = f_high
+
+    def spatial_nyquist_check(self):
+        if self.d_inter > self.c / (2 * self.f_high):
+            raise ValueError("Spatial Nyquist theorem not satisfied!")
 
     def multi_channel_stft(self, x):
         """
         input: x: (T (n_samples), C (channels))
         output: X: (C, F, T) complex valued
-                f_analog: (F - 1,) except f = 0
+                f_analog: (f_low, f_high)
         """
         device = x.device
         x = x.unsqueeze(0)  # (1, T, C)
@@ -48,18 +58,21 @@ class SRP(nn.Module):
         X = torch.view_as_real(X)  # (1, F, T, 2)
         X = X.view(bs, -1, X.shape[1], X.shape[2], 2)  # (1, C, F, T, 2)
 
-        X = torch.complex(X[..., 0], X[..., 1])  # (1, C, F, T)
-        f_analog = torch.linspace(0, self.fs / 2, self.n_fft // 2 + 1)
+        X = torch.complex(X[..., 0], X[..., 1]).squeeze(0)  # (C, F, T)
 
-        return X.squeeze(0), f_analog[1:]
+        f_analog = torch.linspace(0, self.fs / 2, self.n_fft // 2 + 1)
+        f_use_idx = (f_analog >= self.f_low) & (f_analog < self.f_high)
+        f_analog = f_analog[f_use_idx]
+
+        return X[:, f_use_idx, :], f_analog
 
     def srp_ula(self, sig_stft, f_analog):
         """
         sig_stft: (C, F, T)
-        f_analog: (F - 1,) except f = 0
+        f_analog: (f_low, f_high)
         """
         M, _, T = sig_stft.shape
-        theta = torch.linspace(-90, 90, 361)
+        theta = torch.linspace(-90, 90, int(180 / self.resolution + 1))
         theta = torch.deg2rad(theta)
         theta_sin = torch.sin(theta)
 
@@ -79,15 +92,17 @@ class SRP(nn.Module):
         power_map_mean = torch.mean(power_map, dim=0)  # (angle,)
         doa_order = torch.argmax(power_map_mean)
 
-        return doa_order * 0.5 - 90, power_map_mean
+        return doa_order * self.resolution - 90, power_map_mean
 
     def forward(self, x):
         """
         input: x: (T (n_samples), C (channels))
         output: doa_estimation: (1,)
         """
+        self.spatial_nyquist_check()
+
         sig_stft, f_analog = self.multi_channel_stft(x)  # (C, F, T), (F,)
-        doa_est, power_map = self.srp_ula(sig_stft[:, 1:, :], f_analog)
+        doa_est, power_map = self.srp_ula(sig_stft, f_analog)
 
         return doa_est, power_map
 
@@ -98,10 +113,10 @@ if __name__ == '__main__':
     rir = np.load('0001_rt60=0.92_d=0.020_r1=1.00_phi1=21.52.npy')
 
     T = len(speech)
-    sensor_1 = signal.fftconvolve(speech, rir[0][0], mode='same')
-    sensor_2 = signal.fftconvolve(speech, rir[1][0], mode='same')
-    sensor_3 = signal.fftconvolve(speech, rir[2][0], mode='same')
-    sensor_4 = signal.fftconvolve(speech, rir[3][0], mode='same')
+    sensor_1 = signal.fftconvolve(speech, rir[0][0], mode='full')[:T]
+    sensor_2 = signal.fftconvolve(speech, rir[1][0], mode='full')[:T]
+    sensor_3 = signal.fftconvolve(speech, rir[2][0], mode='full')[:T]
+    sensor_4 = signal.fftconvolve(speech, rir[3][0], mode='full')[:T]
 
     sig = np.stack([sensor_1, sensor_2, sensor_3, sensor_4], axis=1)  # (T, 4)
     sig = torch.tensor(sig).to(device)
@@ -129,6 +144,6 @@ if __name__ == '__main__':
     plt.title('SRP Power Map')
     plt.grid(alpha=0.3)
     plt.legend()
-    plt.xlim(-90, 90)  
+    plt.xlim(-90, 90)
     plt.show()
 

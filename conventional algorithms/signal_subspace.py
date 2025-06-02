@@ -151,7 +151,7 @@ class ESPRIT(nn.Module):
             f_high=1000,
     ):
         """
-        # Implementation of ESPRIT algorithm for sound source localization.
+        Implementation of ESPRIT algorithm for sound source localization.
         """
         super(ESPRIT, self).__init__()
         self.d_inter = d_inter
@@ -248,6 +248,6 @@ if __name__ == '__main__':
     plt.ylabel('Power')
     plt.grid(alpha=0.3)
     plt.legend()
-    plt.xlim(-90, 90)  # 显式设置x轴范围
+    plt.xlim(-90, 90)  
     plt.show()
 

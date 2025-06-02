@@ -187,7 +187,11 @@ class ESPRIT(nn.Module):
 
             phase = torch.atan2(steer_vec.imag, steer_vec.real)  # (source_num,)
             angle = torch.asin(phase * self.c / (2 * torch.pi * f_analog[i] * self.d_inter)).rad2deg()  # (source_num,)
-            angle_list.append(angle)
+            # avoid nan value
+            if torch.isnan(angle):
+                continue
+            else:
+                angle_list.append(angle)
 
         angle_list = torch.cat(angle_list, dim=0)  # (F, source_num)
 
